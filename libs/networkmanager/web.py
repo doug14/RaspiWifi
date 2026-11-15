@@ -9,7 +9,8 @@ import sys
 
 from flask import Flask, abort, redirect, render_template, request, session, url_for
 
-from backend import HOTSPOT_ADDRESS, WiFiValidationError, validate_wifi
+from backend import (HOTSPOT_ADDRESS, HOTSPOT_PASSWORD_MIN_LENGTH, WiFiValidationError,
+                     validate_hotspot_password, validate_wifi)
 from ipc import RemoteController, PortalUnavailable
 from mdns import PORTAL_HOSTNAME
 
@@ -17,6 +18,10 @@ from mdns import PORTAL_HOSTNAME
 WEB_ROOT = Path(__file__).resolve().parents[1] / "configuration_app"
 HOTSPOT_NETWORK = IPv4Network(f"{HOTSPOT_ADDRESS}/24", strict=False)
 PASSWORD_ERROR = "Use de 8 a 63 caracteres ASCII imprimíveis ou uma chave hexadecimal de 64 dígitos."
+HOTSPOT_PASSWORD_RULE = (
+    f"Use de {HOTSPOT_PASSWORD_MIN_LENGTH} a 63 caracteres ASCII imprimíveis "
+    "ou uma chave hexadecimal de 64 dígitos."
+)
 CHANGE_PENDING = "Já existe uma alteração em andamento. Aguarde e tente novamente."
 
 
@@ -34,7 +39,8 @@ def create_app(controller, admin_code, *, landing=False):
         if not request.is_secure:
             return {}
         notice = controller.notice if session.get("authorized") else ""
-        return {"csrf_token": session.setdefault("csrf", token_hex(32)), "notice": notice}
+        return {"csrf_token": session.setdefault("csrf", token_hex(32)), "notice": notice,
+                "hotspot_password_rule": HOTSPOT_PASSWORD_RULE}
 
     @app.before_request
     def check_portal_request():
@@ -142,11 +148,11 @@ def create_app(controller, admin_code, *, landing=False):
             return render_template("networkmanager/hotspot.html", protected=True,
                                    errors={"password": "Digite a senha do hotspot."}), 400
         try:
-            validate_wifi(controller.config["ssid"], password)
+            validate_hotspot_password(password)
             controller.submit(controller.config["ssid"], password, "hotspot", False)
         except WiFiValidationError:
             return render_template("networkmanager/hotspot.html", protected=enabled,
-                                   errors={"password": PASSWORD_ERROR}), 400
+                                   errors={"password": HOTSPOT_PASSWORD_RULE}), 400
         except Full:
             return render_template("networkmanager/hotspot.html", protected=enabled,
                                    errors={"form": CHANGE_PENDING}), 409

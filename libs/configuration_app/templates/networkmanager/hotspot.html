@@ -9,7 +9,7 @@
   <form action="{{ url_for('save_wpa_credentials') }}" method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <input type="hidden" name="wpa_enabled" value="1">
-    {{ password_field('wpa_key', 'Nova senha WPA2 do hotspot', 'Use uma senha exclusiva para este aparelho.', errors.password, true) }}
+    {{ password_field('wpa_key', 'Nova senha WPA2 do hotspot', hotspot_password_rule, errors.password, true) }}
     <p class="message" id="hotspot-note">O hotspot vai desconectar ao aplicar a alteração.</p>
     <button class="primary" type="submit" aria-describedby="hotspot-note">Salvar configurações</button>
   </form>

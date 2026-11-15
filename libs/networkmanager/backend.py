@@ -20,6 +20,7 @@ SECURITY = WIFI + "-security"
 OWNER_KEY = "org.raspiwifi.owner"
 ROLE_KEY = "org.raspiwifi.role"
 HOTSPOT_ADDRESS = "10.0.0.1"
+HOTSPOT_PASSWORD_MIN_LENGTH = 12
 ACTIVATION_TIMEOUT = 45
 AP_CAPABILITY = 0x40
 STATE_ACTIVATED = 2
@@ -37,11 +38,24 @@ class WiFiValidationError(ValueError):
         self.field = field
 
 
+def valid_wpa_password(password, minimum):
+    passphrase = minimum <= len(password) <= 63 and re.fullmatch(r"[ -~]+", password) is not None
+    hex_key = re.fullmatch(r"[0-9a-fA-F]{64}", password) is not None
+    return passphrase or hex_key
+
+
+def validate_hotspot_password(password):
+    if not password.strip() or not valid_wpa_password(password, HOTSPOT_PASSWORD_MIN_LENGTH):
+        raise WiFiValidationError(
+            "password",
+            f"Use {HOTSPOT_PASSWORD_MIN_LENGTH}–63 printable ASCII characters or a 64-digit hexadecimal key.",
+        )
+
+
 def validate_wifi(ssid, password):
     if not 1 <= len(ssid.encode("utf-8")) <= 32 or any(c in ssid for c in "\0\r\n"):
         raise WiFiValidationError("ssid", "Enter an SSID between 1 and 32 bytes.")
-    if password and not (re.fullmatch(r"[ -~]{8,63}", password) or
-                         re.fullmatch(r"[0-9a-fA-F]{64}", password)):
+    if password and not valid_wpa_password(password, 8):
         raise WiFiValidationError("password", "Enter a WPA password of 8–63 printable ASCII characters or a 64-digit hex key.")
 
 

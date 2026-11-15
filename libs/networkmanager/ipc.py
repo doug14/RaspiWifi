@@ -8,7 +8,7 @@ from socketserver import StreamRequestHandler
 import struct
 from threading import Thread
 
-from backend import validate_wifi
+from backend import validate_hotspot_password, validate_wifi
 
 
 SOCKET_PATH = Path("/run/raspiwifi/control.sock")
@@ -99,8 +99,10 @@ def control_socket(controller):
                 return {"error": "invalid"}
             if role not in ("client", "hotspot"):
                 return {"error": "invalid"}
-            if role == "hotspot" and (not password or hidden or ssid != controller.config["ssid"]):
-                return {"error": "invalid"}
+            if role == "hotspot":
+                if hidden or ssid != controller.config["ssid"]:
+                    return {"error": "invalid"}
+                validate_hotspot_password(password)
             validate_wifi(ssid, password)
             controller.submit(ssid, password, role, hidden)
             return {"accepted": True}

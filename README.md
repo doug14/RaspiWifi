@@ -12,9 +12,11 @@ O aparelho precisa de uma interface Wi‑Fi com suporte a ponto de acesso, Netwo
 sudo /usr/bin/python3 -I -S initial_setup.py
 ```
 
-O instalador mantém a conexão Wi‑Fi atual. O SSID inicial é `RaspWifi`. Pressione Enter no campo de senha para gerar uma senha WPA2 exclusiva por instalação ou digite uma senha própria. A ativação automática vem habilitada com espera de **300 segundos sem Wi‑Fi com IPv4**. O instalador também oferece acesso opcional ao PiKaraoke pela porta `5555`.
+O instalador mantém a conexão Wi‑Fi atual. O SSID inicial é `RaspWifi`. Durante a instalação, crie e confirme a senha WPA2 do hotspot. Use **de 12 a 63 caracteres ASCII imprimíveis** (letras sem acento, números, espaços ou símbolos) ou uma chave hexadecimal de 64 dígitos. A senha é digitada sem aparecer no terminal e deve conter pelo menos um caractere além de espaços. Use essa mesma senha para conectar ao hotspot.
 
-Para atualizar uma instalação deste projeto que já usa NetworkManager, execute o comando abaixo enquanto o Pi estiver na rede normal. A migração da instalação anterior ao portal protegido gera uma nova senha para o hotspot.
+A ativação automática vem habilitada com espera de **300 segundos sem Wi‑Fi com IPv4**. O instalador também oferece acesso opcional ao PiKaraoke pela porta `5555`.
+
+Para atualizar uma instalação deste projeto que já usa NetworkManager, execute o comando abaixo enquanto o Pi estiver na rede normal. A atualização só pede uma nova senha se você estiver migrando de uma instalação anterior ao portal protegido ou se a senha atual não atender aos requisitos.
 
 ```bash
 sudo /usr/bin/python3 -I -S initial_setup.py --upgrade
@@ -24,11 +26,9 @@ Se o aparelho usa a versão legada com `hostapd` e `dhcpcd`, remova-a com o desi
 
 ## Abrir o portal
 
-1. Pelo console ou pelo SSH administrativo, consulte a senha WPA2 e o código administrativo. Se escolheu outro SSID, troque `RaspWifi` no nome do perfil.
+1. Use a senha WPA2 que definiu na instalação. Consulte o código administrativo pelo console ou pelo SSH administrativo.
 
    ```bash
-   sudo nmcli --show-secrets -g 802-11-wireless-security.psk \
-     connection show id 'RaspiWiFi hotspot: RaspWifi'
    sudo cat /etc/raspiwifi/admin-code
    ```
 

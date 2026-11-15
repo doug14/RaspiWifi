@@ -9,8 +9,20 @@ from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "libs" / "networkmanager"))
 from backend import HOTSPOT_ADDRESS, WIFI, NetworkError, NetworkManager
+import install
 import service
 import web
+
+
+class InstallerPasswordTests(unittest.TestCase):
+    def test_retries_until_a_valid_password_is_confirmed(self):
+        with patch.object(install, "getpass", side_effect=[
+            "", "short123", "fixture-first", "mismatch", "fixture-final", "fixture-final",
+        ]) as prompt, patch("builtins.print") as output:
+            self.assertEqual(install.prompt_hotspot_password(), "fixture-final")
+        self.assertEqual(prompt.call_count, 6)
+        self.assertEqual(output.call_count, 3)
+        self.assertNotIn("fixture-final", str(output.call_args_list))
 
 
 class SwitchTests(unittest.TestCase):
@@ -150,6 +162,18 @@ class PortalTests(unittest.TestCase):
         self.assertNotIn(b"<form", response.data)
         self.assertEqual(landing.post("/save_credentials", data=form, **kwargs).status_code, 405)
         self.assertTrue(self.controller.requests.empty())
+
+    def test_hotspot_change_requires_a_longer_password_than_client_connections(self):
+        kwargs = {"base_url": self.url, "environ_overrides": self.local}
+        page = self.client.get("/wpa_settings", **kwargs)
+        token = re.search(rb'name="csrf_token" value="([0-9a-f]+)"', page.data)[1].decode()
+        form = {"csrf_token": token, "wpa_enabled": "1", "wpa_key": "test-pass"}
+        response = self.client.post("/save_wpa_credentials", data=form, **kwargs)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(b'de 12 a 63', response.data)
+        self.assertTrue(self.controller.requests.empty())
+        form["wpa_key"] = "fixture-pass"
+        self.assertEqual(self.client.post("/save_wpa_credentials", data=form, **kwargs).status_code, 202)
 
     def test_failed_switch_leaves_portal_available_for_retry(self):
         self.controller.submit("venue", "test-pass", "client", False)

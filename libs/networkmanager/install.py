@@ -1,14 +1,15 @@
-from getpass import getpass
+from getpass import GetPassWarning, getpass
 import os
 from pathlib import Path
 import shutil
 import subprocess
 import tempfile
 import uuid
-from secrets import token_urlsafe
+import warnings
 
-from backend import (HOTSPOT_ADDRESS, PROFILE, SECURITY, UPDATE_TO_DISK, WIFI,
-                     NetworkError, NetworkManager, validate_wifi)
+from backend import (HOTSPOT_ADDRESS, HOTSPOT_PASSWORD_MIN_LENGTH, PROFILE, SECURITY, UPDATE_TO_DISK,
+                     WIFI, NetworkError, NetworkManager, WiFiValidationError,
+                     validate_hotspot_password, validate_wifi)
 from config import (CONFIG_DIR, CONFIG_PATH, INSTALL_DIR, LANDING_UNIT, LANDING_UNIT_PATH,
                     PENDING_SWITCH, RESET_REQUEST, SERVICE, UNIT_PATH, WEB_UNIT,
                     WEB_UNIT_PATH, load_config, save_config)
@@ -32,6 +33,25 @@ def yes(prompt):
     return input(prompt).strip().lower() == "y"
 
 
+def prompt_hotspot_password():
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", GetPassWarning)
+        try:
+            while True:
+                password = getpass("Create a WPA2 password for the hotspot "
+                                   f"(at least {HOTSPOT_PASSWORD_MIN_LENGTH} characters): ")
+                try:
+                    validate_hotspot_password(password)
+                except WiFiValidationError as error:
+                    print(error)
+                    continue
+                if getpass("Confirm the hotspot password: ") == password:
+                    return password
+                print("Passwords do not match. Try again.")
+        except (EOFError, GetPassWarning):
+            raise ValueError("Run the installer in an interactive terminal to enter a hotspot password.") from None
+
+
 def install():
     if any(path.exists() for path in (CONFIG_DIR, INSTALL_DIR, UNIT_PATH, WEB_UNIT_PATH, LANDING_UNIT_PATH,
                                       Path("/etc/cron.raspiwifi"))):
@@ -39,9 +59,8 @@ def install():
 
     interface = input("Wi-Fi interface [wlan0]: ").strip() or "wlan0"
     ssid = input(f"Setup hotspot SSID [{DEFAULT_HOTSPOT_SSID}]: ") or DEFAULT_HOTSPOT_SSID
-    entered_password = getpass("Hotspot WPA2 password (Enter to generate a unique password): ")
-    password = entered_password or token_urlsafe(18)
-    validate_wifi(ssid, password)
+    validate_wifi(ssid, "")
+    password = prompt_hotspot_password()
     auto_config = input("Enable hotspot fallback when Wi-Fi is unavailable? [Y/n]: ").strip().lower() in ("", "y")
     delay = int(input("Fallback delay in seconds [300]: ") or "300") if auto_config else 300
     karaoke = yes("Allow local PiKaraoke access on TCP 5555 from the hotspot? [y/N]: ")
@@ -72,7 +91,6 @@ def install():
         raise
     print(f"Installed. Read the administrative code at {ADMIN_CODE} as root.")
     print(f"Transfer {PORTAL_CA} over a trusted channel before opening the portal.")
-    print("Use nmcli --show-secrets to read the generated password from the RaspiWiFi hotspot profile.")
     print(f"To open the setup hotspot, run sudo python3 {INSTALL_DIR / 'reset_device/manual_reset.py'}.")
 
 
@@ -119,10 +137,20 @@ def upgrade():
     if network.active()[0].get("Connection") == path:
         raise ValueError("Connect the Pi to its normal Wi-Fi before upgrading the hotspot profile.")
     profile_uuid = previous_profile["connection"]["uuid"]
-    old_password = subprocess.check_output(["nmcli", "--show-secrets", "-g", f"{SECURITY}.psk",
-                                            "connection", "show", "uuid", profile_uuid], text=True).strip()
+    old_password = ""
+    if SECURITY in previous_profile:
+        old_password = subprocess.check_output(["nmcli", "--show-secrets", "--escape", "no", "-g",
+                                                f"{SECURITY}.psk", "connection", "show", "uuid", profile_uuid],
+                                               text=True).rstrip("\n")
     certificates_exist = ADMIN_CODE.exists()
-    password = old_password if old_password and certificates_exist else token_urlsafe(18)
+    if not yes("Upgrade the RaspiWiFi service and hotspot profile? [y/N]: "):
+        return
+    try:
+        validate_hotspot_password(old_password if certificates_exist else "")
+    except WiFiValidationError:
+        password = prompt_hotspot_password()
+    else:
+        password = old_password
     settings = network.settings(config["ssid"], password, "hotspot")
     settings["connection"]["uuid"] = network.glib.Variant("s", profile_uuid)
     original = network.settings(bytes(previous_profile[WIFI]["ssid"]).decode(), old_password, "hotspot")
@@ -130,8 +158,6 @@ def upgrade():
         original[WIFI].pop("ap-isolation")
     original["connection"]["uuid"] = network.glib.Variant("s", profile_uuid)
     original["connection"]["id"] = network.glib.Variant("s", previous_profile["connection"]["id"])
-    if not yes("Upgrade the RaspiWiFi service and hotspot profile? [y/N]: "):
-        return
     prepare_runtime()
     provision()
     source = Path(__file__).resolve().parents[1]
@@ -165,7 +191,7 @@ def upgrade():
             subprocess.run(["systemctl", "daemon-reload"], check=True)
             subprocess.run(["systemctl", "start", SERVICE], check=True)
             raise
-    print("Upgraded RaspiWiFi. Use nmcli --show-secrets to read the hotspot password.")
+    print("Upgraded RaspiWiFi.")
 
 
 def uninstall():
