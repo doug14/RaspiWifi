@@ -1,0 +1,15 @@
+{% extends 'networkmanager/layout.html' %}
+
+{% block title %}Alterando o Wi-Fi{% endblock %}
+{% block body %}
+  {% if hotspot %}
+    <h1>Atualizando o hotspot</h1>
+    <p>Quando a rede reaparecer, reconecte-se{% if protected %} com a nova senha{% endif %} e abra <a href="{{ portal_url }}">{{ portal_url }}</a>.</p>
+    <p class="message">Se a alteração falhar, o hotspot volta com a configuração anterior.</p>
+  {% else %}
+    <h1>Testando a conexão</h1>
+    <p>O Raspberry vai tentar conectar à rede <strong class="network-name">{{ ssid }}</strong>. A rede de configuração vai desconectar.</p>
+    <p>Se a conexão funcionar, conecte seu celular à rede escolhida e use o endereço ou o QR code do PiKaraoke.</p>
+    <p class="message">Se o hotspot reaparecer, conecte-se a ele e abra <a href="{{ portal_url }}">{{ portal_url }}</a> para tentar de novo.</p>
+  {% endif %}
+{% endblock %}

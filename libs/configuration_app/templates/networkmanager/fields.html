@@ -1,0 +1,14 @@
+{% macro password_field(name, label, hint, error, required=false) %}
+  <div class="field">
+    <label for="{{ name }}">{{ label }}</label>
+    <div class="password-row">
+      <input id="{{ name }}" name="{{ name }}" type="password" autocomplete="new-password"
+             aria-describedby="{{ name }}-hint{% if error %} {{ name }}-error{% endif %}"
+             {% if error %}aria-invalid="true"{% endif %}{% if required %} required{% endif %}>
+      <button class="secondary-button" type="button" data-password="{{ name }}"
+              aria-controls="{{ name }}" hidden>Mostrar senha</button>
+    </div>
+    <p id="{{ name }}-hint" class="hint">{{ hint }}</p>
+    {% if error %}<p id="{{ name }}-error" class="error" role="alert">{{ error }}</p>{% endif %}
+  </div>
+{% endmacro %}

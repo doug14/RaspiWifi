@@ -1,0 +1,15 @@
+{% extends 'networkmanager/layout.html' %}
+{% block title %}Acesso administrativo{% endblock %}
+{% block body %}
+  <h1>Acesso administrativo</h1>
+  <form method="post" action="{{ url_for('login') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="field">
+      <label for="admin_code">Código administrativo do Raspberry</label>
+      <input type="password" id="admin_code" name="admin_code" autocomplete="current-password" required
+             {% if error %}aria-invalid="true" aria-describedby="admin-error"{% endif %}>
+      {% if error %}<p class="error" id="admin-error" role="alert">Código inválido.</p>{% endif %}
+    </div>
+    <button class="primary" type="submit">Entrar</button>
+  </form>
+{% endblock %}

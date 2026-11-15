@@ -1,0 +1,20 @@
+[Unit]
+Description=RaspiWiFi HTTP landing page
+BindsTo=raspiwifi.service
+PartOf=raspiwifi.service
+After=raspiwifi.service
+
+[Service]
+DynamicUser=yes
+ExecStart=/usr/bin/python3 -I -S -B /usr/lib/raspiwifi/networkmanager/launch.py web.py http
+Restart=on-failure
+RestartSec=3s
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectHome=yes
+ProtectSystem=strict
+RestrictAddressFamilies=AF_UNIX AF_INET
+UMask=0077

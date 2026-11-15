@@ -1,0 +1,17 @@
+{% extends 'networkmanager/layout.html' %}
+{% from 'networkmanager/fields.html' import password_field %}
+
+{% block title %}Configurações do hotspot{% endblock %}
+{% block body %}
+  <h1>Configurações do hotspot</h1>
+  {% if notice %}<p class="message error" role="status">{{ notice }}</p>{% endif %}
+  {% if errors.form %}<p class="message error" role="alert">{{ errors.form }}</p>{% endif %}
+  <form action="{{ url_for('save_wpa_credentials') }}" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="wpa_enabled" value="1">
+    {{ password_field('wpa_key', 'Nova senha WPA2 do hotspot', 'Use uma senha exclusiva para este aparelho.', errors.password, true) }}
+    <p class="message" id="hotspot-note">O hotspot vai desconectar ao aplicar a alteração.</p>
+    <button class="primary" type="submit" aria-describedby="hotspot-note">Salvar configurações</button>
+  </form>
+  <footer><a class="text-link" href="{{ url_for('index') }}">Voltar à lista de redes</a></footer>
+{% endblock %}

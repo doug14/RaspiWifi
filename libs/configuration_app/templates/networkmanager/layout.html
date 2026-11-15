@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Configurar Wi-Fi{% endblock %} · RaspiWiFi</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylesheets/portal.css') }}">
+    <script src="{{ url_for('static', filename='portal.js') }}" defer></script>
+  </head>
+  <body>
+    <main class="portal">
+      <p class="brand">Raspi<span>WiFi</span></p>
+      {% block body %}{% endblock %}
+    </main>
+  </body>
+</html>

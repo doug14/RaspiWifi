@@ -1,0 +1,24 @@
+[Unit]
+Description=RaspiWiFi setup hotspot and portal
+After=NetworkManager.service avahi-daemon.service
+Wants=NetworkManager.service avahi-daemon.service
+
+[Service]
+ExecStart=/usr/bin/python3 -I -S -B /usr/lib/raspiwifi/networkmanager/launch.py service.py
+Restart=on-failure
+RestartSec=5s
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+CapabilityBoundingSet=CAP_CHOWN CAP_NET_ADMIN
+RuntimeDirectory=raspiwifi
+RuntimeDirectoryMode=0755
+ReadWritePaths=/etc/raspiwifi
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

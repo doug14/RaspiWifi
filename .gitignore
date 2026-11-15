@@ -1,0 +1,10 @@
+__pycache__
+*.pem
+*.key
+admin-code
+networkmanager.json
+pending-switch.json
+*.nmconnection
+.env
+.venv/
+graphify-out/
